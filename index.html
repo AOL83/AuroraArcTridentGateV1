@@ -20,6 +20,9 @@
 .guide-target{animation:targetPulse 1.25s ease-in-out infinite!important;border-color:rgba(88,246,255,.9)!important;box-shadow:0 0 0 3px rgba(88,246,255,.12),0 0 22px rgba(88,246,255,.38)!important}
 .guide-hint{border-color:rgba(234,255,56,.45)!important;background:linear-gradient(135deg,rgba(234,255,56,.14),rgba(88,246,255,.08))!important;color:#fff8bf!important;box-shadow:0 0 22px rgba(234,255,56,.16)}
 .step-mini{display:flex;gap:.45rem;flex-wrap:wrap;margin:.65rem 0 .2rem}.step-dot{width:26px;height:26px;border-radius:999px;display:grid;place-items:center;border:1px solid rgba(255,255,255,.16);background:rgba(0,0,0,.25);font-size:.72rem;font-weight:950;color:var(--muted)}.step-dot.done{border-color:rgba(88,255,155,.55);color:#06140b;background:var(--green)}.step-dot.active{border-color:rgba(234,255,56,.85);color:#06140b;background:var(--yellow);box-shadow:0 0 18px rgba(234,255,56,.25)}
+.success-banner{margin:0 0 1rem;padding:.9rem 1rem;border:1px solid rgba(88,255,155,.45);border-radius:18px;background:linear-gradient(135deg,rgba(88,255,155,.18),rgba(234,255,56,.1));color:#dffff0;font-weight:950;box-shadow:0 0 26px rgba(88,255,155,.16)}
+.complete-glow{animation:completeGlow 1.5s ease-in-out 2;border-color:rgba(88,255,155,.85)!important;box-shadow:0 0 0 4px rgba(88,255,155,.14),0 0 44px rgba(88,255,155,.3)!important}
+@keyframes completeGlow{50%{box-shadow:0 0 0 7px rgba(88,255,155,.18),0 0 70px rgba(88,255,155,.42)!important}}
 @keyframes guidePulse{50%{transform:scale(1.006);box-shadow:0 0 0 5px rgba(234,255,56,.15),0 0 56px rgba(234,255,56,.42),0 0 105px rgba(88,246,255,.16),var(--shadow),inset 0 1px 0 rgba(255,255,255,.18)}}
 @keyframes targetPulse{50%{transform:scale(1.025);box-shadow:0 0 0 5px rgba(88,246,255,.16),0 0 34px rgba(88,246,255,.42)!important}}
 .nav-guide{position:relative}.nav-guide:hover,.nav-guide.guide-target{border-color:rgba(234,255,56,.95)!important;box-shadow:0 0 0 3px rgba(234,255,56,.14),0 0 30px rgba(234,255,56,.3)!important}.nav-guide:hover:after,.nav-guide.guide-target:after{content:'Go here';position:absolute;left:50%;bottom:-2.15rem;transform:translateX(-50%);white-space:nowrap;border:1px solid rgba(234,255,56,.38);border-radius:999px;background:rgba(0,0,0,.75);color:var(--yellow);padding:.25rem .5rem;font-size:.68rem;font-weight:950}.ok{color:var(--green)}.bad{color:var(--red)}.muted{color:var(--muted)}.hidden{display:none!important}@keyframes pulse{50%{transform:scale(1.35);opacity:1}}@media(min-width:790px){.status{display:flex}.two{grid-template-columns:.95fr 1.05fr}.three{grid-template-columns:repeat(3,1fr)}}@media(max-width:540px){.brand-sub{display:none}.card{width:100%}.topbar-inner{min-height:64px}.mark{width:42px;height:42px}}
@@ -124,7 +127,7 @@
         <button class="btn btn-red" id="lockAllBtn">Lock All</button>
       </div>
       <div id="uxHint" class="warn guide-hint" style="margin-top:.75rem">Next step: Start key challenge.</div>
-      <div class="step-mini" id="stepDots"><span class="step-dot active">1</span><span class="step-dot">2</span><span class="step-dot">3</span><span class="step-dot">4</span><span class="step-dot">5</span></div>
+      <div class="step-mini" id="stepDots"><span class="step-dot active">1</span><span class="step-dot">2</span><span class="step-dot">3</span><span class="step-dot">4</span><span class="step-dot">5</span><span class="step-dot">6</span></div>
       <label>AI prompt</label>
       <textarea id="aiPrompt" readonly placeholder="Start memory challenge..."></textarea>
       <label>Your response</label>
@@ -173,6 +176,7 @@ Waiting for setup.</div>
       <h2><span class="gradient">Personal filing cabinet</span></h2>
       <div id="userLocked" class="cover"><div><h2>User cabinet locked</h2><p class="copy">Authenticate as user and pass the context layer to open.</p></div></div>
       <div id="userUnlocked" class="hidden">
+        <div id="arcCompleteBanner" class="success-banner hidden">✅ Arc active · Cabinet unlocked · First secure action ready</div>
         <p class="copy">User cabinet unlocked. This is where encrypted files, identity permissions, and future AI tools would live.</p>
         <label>Cabinet note</label>
         <textarea id="cabinetNote" placeholder="Write a local cabinet note..."></textarea>
@@ -416,6 +420,7 @@ async function refreshMeta(){
   $('userPill').style.color=hasSession('user')?'#58ff9b':'#eaff38';
   if(!um)observe('No user cabinet registered yet.','INFO');
   const note=await dbGet(NOTE);$('storedNote').textContent=note||'No note saved yet.';
+  if($('arcCompleteBanner'))$('arcCompleteBanner').classList.toggle('hidden',!note);
 }
 function updateAccess(){
   const ownerOpen=hasSession('owner')&&trust>=55;
@@ -460,8 +465,14 @@ function updateUXHints(){
     hint='Step 4: Ask Memory Challenge, then answer the phrase or contradiction prompt.';
     activePanel='loginPanel'; targetId='askMemoryBtn'; navTarget='openGateBtn'; step=4;
   } else if(userTarget && userSession && trust>=70){
-    hint='Step 5: Access granted. Move to View Inside and use the cabinet.';
-    activePanel='userCabinet'; targetId='saveNoteBtn'; navTarget='viewInsideBtn'; step=5;
+    const note=($('storedNote')?.textContent||'').trim();
+    if(!note || note==='No note saved yet.'){
+      hint='Step 5: Access granted. Move to View Inside, write a cabinet note, then Save Note.';
+      activePanel='userCabinet'; targetId='cabinetNote'; navTarget='viewInsideBtn'; step=5;
+    }else{
+      hint='Step 6: Arc active. Cabinet initialized successfully.';
+      activePanel='userCabinet'; targetId='saveNoteBtn'; navTarget='viewInsideBtn'; step=6;
+    }
   } else if(role==='owner' && ownerSession && trust>=55){
     hint='Owner Core is open. Switch role to User Cabinet when you want the filing cabinet.';
     activePanel='ownerCore'; targetId='loginRole'; navTarget='viewInsideBtn'; step=5;
@@ -485,9 +496,17 @@ function setGuide(panelId,targetId,step,navTarget){
 }
 async function saveNote(){
   if(!(hasSession('user')&&trust>=70)){observe('Cabinet save blocked: user not trusted enough','DENY');return}
-  await dbSet(NOTE,$('cabinetNote').value.trim());
-  $('storedNote').textContent=$('cabinetNote').value.trim()||'No note saved yet.';
-  observe('Cabinet note saved locally','OK');
+  const note=$('cabinetNote').value.trim();
+  await dbSet(NOTE,note);
+  $('storedNote').textContent=note||'No note saved yet.';
+  observe(note?'Cabinet note saved locally':'Cabinet note cleared','OK');
+  if(note){
+    $('arcCompleteBanner').classList.remove('hidden');
+    $('userCabinet').classList.add('complete-glow');
+    setTimeout(()=>$('userCabinet').classList.remove('complete-glow'),3200);
+    observe('Arc initialized successfully. First secure cabinet action complete.','OK');
+  }
+  updateUXHints();
 }
 function lockAll(){sessionStorage.removeItem(SESSION_OWNER);sessionStorage.removeItem(SESSION_USER);sessionStorage.removeItem(SESSION_OWNER+'-expires');sessionStorage.removeItem(SESSION_USER+'-expires');setTrust(0,'manual lock');observe('All sessions locked','LOCK');refreshMeta();updateAccess()}
 function startTrustDecay(){
