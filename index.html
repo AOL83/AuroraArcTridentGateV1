@@ -208,6 +208,7 @@ let currentPrompt=null;
 let trust=0;
 let memoryPassed=false;
 let userKeyRegistered=false;
+let guideStep=1;
 let recognizer=null;
 let listening=false;
 let failedAttempts=0;
@@ -452,56 +453,27 @@ function updateAccess(){
 }
 
 function updateUXHints(){
-  const role=$('loginRole')?.value||'user';
-  const hasOwnerKey=($('ownerFp')?.textContent||'').includes('-');
-  const ownerSession=hasSession('owner');
-  const userSession=hasSession('user');
-  const note=($('storedNote')?.textContent||'').trim();
-  const response=($('memoryResponse')?.value||'').trim();
-  let hint='';
-  let activePanel='loginPanel';
-  let targetId='startLoginBtn';
-  let navTarget='openGateBtn';
-  let step=1;
-
-  if(!hasOwnerKey){
-    hint='Step 1: Begin Setup → Create Owner Key.';
-    activePanel='ownerPanel'; targetId='createOwnerBtn'; navTarget='beginSetupBtn'; step=1;
-  } else if(!ownerSession){
-    hint='Step 2: Authenticate Owner to wake the root shell.';
-    activePanel='ownerPanel'; targetId='authOwnerBtn'; navTarget='beginSetupBtn'; step=2;
-  } else if(!userKeyRegistered){
-    hint='Step 3: Create User Cabinet. This creates the user key and starter memory prompts.';
-    activePanel='userSetupPanel'; targetId='createUserBtn'; navTarget='beginSetupBtn'; step=3;
-  } else if(role!=='user'){
-    hint='Step 4: Select User Cabinet in the role menu.';
-    activePanel='loginPanel'; targetId='loginRole'; navTarget='openGateBtn'; step=4;
-  } else if(!userSession){
-    hint='Step 5: Start User Key Challenge.';
-    activePanel='loginPanel'; targetId='startLoginBtn'; navTarget='openGateBtn'; step=5;
-  } else if(userSession && !memoryPassed && !currentPrompt){
-    hint='Step 6: Ask Memory Challenge.';
-    activePanel='loginPanel'; targetId='askMemoryBtn'; navTarget='openGateBtn'; step=6;
-  } else if(userSession && !memoryPassed && currentPrompt && !response){
-    hint='Step 7: Answer the active AI prompt by typing or voice.';
-    activePanel='loginPanel'; targetId='memoryResponse'; navTarget='openGateBtn'; step=7;
-  } else if(userSession && !memoryPassed && currentPrompt && response){
-    hint='Step 8: Submit Response to satisfy the memory layer.';
-    activePanel='loginPanel'; targetId='submitMemoryBtn'; navTarget='openGateBtn'; step=8;
-  } else if(userSession && memoryPassed && trust>=70 && (!note || note==='No note saved yet.')){
-    hint='Step 9: View Inside → write your first cabinet note.';
-    activePanel='userCabinet'; targetId='cabinetNote'; navTarget='viewInsideBtn'; step=9;
-  } else if(userSession && memoryPassed && trust>=70){
-    hint='Step 10: Arc active. Cabinet initialized successfully.';
-    activePanel='userCabinet'; targetId='saveNoteBtn'; navTarget='viewInsideBtn'; step=10;
-  } else {
-    hint='Follow the highlighted action. The egg is being fussy, naturally.';
-    activePanel='loginPanel'; targetId='loginRole'; navTarget='openGateBtn'; step=1;
-  }
-
-  $('uxHint').textContent=hint;
-  setGuide(activePanel,targetId,step,navTarget);
+  const map={
+    1:{hint:'Step 1: Create Owner Key.',panel:'ownerPanel',target:'createOwnerBtn',nav:'beginSetupBtn'},
+    2:{hint:'Step 2: Authenticate Owner.',panel:'ownerPanel',target:'authOwnerBtn',nav:'beginSetupBtn'},
+    3:{hint:'Step 3: Create User Cabinet.',panel:'userSetupPanel',target:'createUserBtn',nav:'beginSetupBtn'},
+    4:{hint:'Step 4: Select User Cabinet from the role menu.',panel:'loginPanel',target:'loginRole',nav:'openGateBtn'},
+    5:{hint:'Step 5: Start User Key Challenge.',panel:'loginPanel',target:'startLoginBtn',nav:'openGateBtn'},
+    6:{hint:'Step 6: Ask Memory Challenge.',panel:'loginPanel',target:'askMemoryBtn',nav:'openGateBtn'},
+    7:{hint:'Step 7: Answer the active AI prompt by typing or voice.',panel:'loginPanel',target:'memoryResponse',nav:'openGateBtn'},
+    8:{hint:'Step 8: Submit Response.',panel:'loginPanel',target:'submitMemoryBtn',nav:'openGateBtn'},
+    9:{hint:'Step 9: View Inside and write your first cabinet note.',panel:'userCabinet',target:'cabinetNote',nav:'viewInsideBtn'},
+    10:{hint:'Step 10: Save Note to initialize the cabinet.',panel:'userCabinet',target:'saveNoteBtn',nav:'viewInsideBtn'},
+    11:{hint:'Arc active. Tutorial chain complete.',panel:'userCabinet',target:'saveNoteBtn',nav:'viewInsideBtn'}
+  };
+  const s=map[guideStep]||map[1];
+  $('uxHint').textContent=s.hint;
+  setGuide(s.panel,s.target,guideStep,s.nav);
 }
+function advanceGuide(nextStep){
+  if(nextStep>guideStep){guideStep=nextStep;observe(`Guide advanced to step ${guideStep}`,'GUIDE');updateUXHints()}
+}
+function resetGuide(){guideStep=1;updateUXHints()}
 function setGuide(panelId,targetId,step,navTarget){
   document.querySelectorAll('.guide-active').forEach(el=>el.classList.remove('guide-active'));
   document.querySelectorAll('.guide-target').forEach(el=>el.classList.remove('guide-target'));
@@ -526,7 +498,7 @@ async function saveNote(){
   }
   updateUXHints();
 }
-function lockAll(){sessionStorage.removeItem(SESSION_OWNER);sessionStorage.removeItem(SESSION_USER);sessionStorage.removeItem(SESSION_OWNER+'-expires');sessionStorage.removeItem(SESSION_USER+'-expires');memoryPassed=false;setTrust(0,'manual lock');observe('All sessions locked','LOCK');refreshMeta();updateAccess()}
+function lockAll(){sessionStorage.removeItem(SESSION_OWNER);sessionStorage.removeItem(SESSION_USER);sessionStorage.removeItem(SESSION_OWNER+'-expires');sessionStorage.removeItem(SESSION_USER+'-expires');memoryPassed=false;setTrust(0,'manual lock');observe('All sessions locked','LOCK');refreshMeta();resetGuide();updateAccess()}
 function startTrustDecay(){
   if(trustDecayTimer)clearInterval(trustDecayTimer);
   trustDecayTimer=setInterval(()=>{
@@ -560,21 +532,21 @@ async function handleImport(file){
 }
 async function factoryReset(){await dbClear();sessionStorage.clear();setTrust(0,'factory reset');observe('Factory reset complete','LOCK');await refreshMeta();updateAccess()}
 
-$('createOwnerBtn').onclick=()=>createKeyPair($('ownerLabel').value.trim()||'Aurora Original Owner','owner');
-$('authOwnerBtn').onclick=()=>authKey('owner');
+$('createOwnerBtn').onclick=async()=>{await createKeyPair($('ownerLabel').value.trim()||'Aurora Original Owner','owner');advanceGuide(2)};
+$('authOwnerBtn').onclick=async()=>{const ok=await authKey('owner');if(ok)advanceGuide(3)};
 $('wipeOwnerBtn').onclick=async()=>{await dbDel(OWNER_PRIV);await dbDel(OWNER_PUB);await dbDel(OWNER_META);setSession('owner',false);observe('Owner wiped','LOCK');refreshMeta()};
-$('createUserBtn').onclick=async()=>{const ok=hasSession('owner');if(!ok){observe('Owner session required before creating user cabinet','DENY');return}await createKeyPair($('userLabel').value.trim()||'Primary User','user');await addPhrasePair()};
+$('createUserBtn').onclick=async()=>{const ok=hasSession('owner');if(!ok){observe('Owner session required before creating user cabinet','DENY');return}await createKeyPair($('userLabel').value.trim()||'Primary User','user');await addPhrasePair();advanceGuide(4)};
 $('addPhraseBtn').onclick=()=>addPhrasePair();
 $('wipeUserBtn').onclick=async()=>{await dbDel(USER_PRIV);await dbDel(USER_PUB);await dbDel(USER_META);await dbDel(PHRASES);await dbDel(NOTE);setSession('user',false);observe('User cabinet wiped','LOCK');refreshMeta()};
-$('loginRole').onchange=()=>updateUXHints();
-$('memoryResponse').oninput=()=>updateUXHints();
-$('startLoginBtn').onclick=()=>authKey($('loginRole').value);
-$('askMemoryBtn').onclick=()=>askMemory();
+$('loginRole').onchange=()=>{if($('loginRole').value==='user')advanceGuide(5);else updateUXHints()};
+$('memoryResponse').oninput=()=>{if($('memoryResponse').value.trim())advanceGuide(8);else updateUXHints()};
+$('startLoginBtn').onclick=async()=>{const role=$('loginRole').value;const ok=await authKey(role);if(ok&&role==='user')advanceGuide(6);else if(ok&&role==='owner')advanceGuide(3)};
+$('askMemoryBtn').onclick=async()=>{await askMemory();if(currentPrompt)advanceGuide(7)};
 $('speakPromptBtn').onclick=()=>{const text=$('aiPrompt').value.trim();if(!text){observe('No prompt to speak yet','WARN');return}speakText(text)};
 $('voiceAnswerBtn').onclick=()=>toggleVoiceAnswer();
-$('submitMemoryBtn').onclick=()=>evalMemory();
+$('submitMemoryBtn').onclick=()=>{const before=memoryPassed;evalMemory();if(!before&&memoryPassed)advanceGuide(9)};
 $('lockAllBtn').onclick=()=>lockAll();
-$('saveNoteBtn').onclick=()=>saveNote();
+$('saveNoteBtn').onclick=async()=>{await saveNote();const note=($('storedNote')?.textContent||'').trim();if(note&&note!=='No note saved yet.')advanceGuide(11)};
 $('exportStateBtn').onclick=()=>exportState();
 $('importStateBtn').onclick=()=>importState();
 $('backupFile').onchange=e=>{const f=e.target.files[0];if(f)handleImport(f).catch(err=>observe('Import failed: '+err.message,'ERR'))};
