@@ -206,6 +206,7 @@ const enc=new TextEncoder();
 const $=id=>document.getElementById(id);
 let currentPrompt=null;
 let trust=0;
+let memoryPassed=false;
 let recognizer=null;
 let listening=false;
 let failedAttempts=0;
@@ -331,7 +332,14 @@ async function authKey(type){
   const payload=enc.encode(`aurora-arc-v03:${type}:${tag}:${location.origin}:${Date.now()}`);
   const sig=await crypto.subtle.sign({name:'ECDSA',hash:'SHA-256'},keys.priv,payload);
   const ok=await crypto.subtle.verify({name:'ECDSA',hash:'SHA-256'},keys.pub,sig,payload);
-  if(ok){setSession(type,true);addTrust(type==='owner'?55:45,`${type} key proof passed`);observe(`${type} cryptographic proof verified`,'OK');recordSuccess(`${type} key proof`)}
+  if(ok){
+    if(type==='user')memoryPassed=false;
+    setSession(type,true);
+    addTrust(type==='owner'?55:45,`${type} key proof passed`);
+    observe(`${type} cryptographic proof verified`,'OK');
+    if(type==='user')observe('User key accepted. Memory challenge still required.','LOCK');
+    recordSuccess(`${type} key proof`)
+  }
   else{setSession(type,false);addTrust(-25,`${type} key proof failed`);observe(`${type} key proof rejected`,'DENY');recordFailure(`${type} key proof failed`)}
   return ok;
 }
@@ -402,7 +410,7 @@ function evalMemory(){
   if(!currentPrompt){observe('No active memory challenge','WARN');recordFailure('submitted without active challenge');return}
   const res=$('memoryResponse').value.trim();
   const score=similarity(res,currentPrompt.answer);
-  if(score>=.86){addTrust(35,'memory phrase matched strongly');observe('Memory challenge passed','OK');recordSuccess('memory challenge')}
+  if(score>=.86){memoryPassed=true;addTrust(35,'memory phrase matched strongly');observe('Memory challenge passed. Trident context layer satisfied.','OK');recordSuccess('memory challenge')}
   else if(score>=.55){addTrust(12,'memory phrase partially matched');observe(`Memory challenge partial match (${Math.round(score*100)}%)`,'WARN')}
   else{addTrust(-30,'memory phrase mismatch');observe(`Memory challenge failed (${Math.round(score*100)}%)`,'DENY');recordFailure('memory phrase mismatch')}
   currentPrompt=null;
@@ -424,7 +432,7 @@ async function refreshMeta(){
 }
 function updateAccess(){
   const ownerOpen=hasSession('owner')&&trust>=55;
-  const userOpen=hasSession('user')&&trust>=70;
+  const userOpen=hasSession('user')&&memoryPassed&&trust>=70;
 
   $('ownerLocked').classList.toggle('hidden',ownerOpen);
   $('ownerUnlocked').classList.toggle('hidden',!ownerOpen);
@@ -461,10 +469,13 @@ function updateUXHints(){
   } else if(userTarget && !userSession){
     hint='Step 3: Select User Cabinet, then press Start Key Challenge.';
     activePanel='loginPanel'; targetId='startLoginBtn'; navTarget='openGateBtn'; step=3;
-  } else if(userTarget && userSession && trust<70){
-    hint='Step 4: Ask Memory Challenge, then answer the phrase or contradiction prompt.';
+  } else if(userTarget && userSession && !memoryPassed){
+    hint='Step 4: User key accepted. Memory challenge required before cabinet opens.';
     activePanel='loginPanel'; targetId='askMemoryBtn'; navTarget='openGateBtn'; step=4;
-  } else if(userTarget && userSession && trust>=70){
+  } else if(userTarget && userSession && memoryPassed && trust<70){
+    hint='Memory passed, but trust is below threshold. Complete another challenge.';
+    activePanel='loginPanel'; targetId='askMemoryBtn'; navTarget='openGateBtn'; step=4;
+  } else if(userTarget && userSession && memoryPassed && trust>=70){
     const note=($('storedNote')?.textContent||'').trim();
     if(!note || note==='No note saved yet.'){
       hint='Step 5: Access granted. Move to View Inside, write a cabinet note, then Save Note.';
@@ -495,7 +506,7 @@ function setGuide(panelId,targetId,step,navTarget){
   dots.forEach((d,i)=>{d.classList.toggle('active',i+1===step);d.classList.toggle('done',i+1<step)});
 }
 async function saveNote(){
-  if(!(hasSession('user')&&trust>=70)){observe('Cabinet save blocked: user not trusted enough','DENY');return}
+  if(!(hasSession('user')&&memoryPassed&&trust>=70)){observe('Cabinet save blocked: user key, memory proof, and trust threshold required','DENY');return}
   const note=$('cabinetNote').value.trim();
   await dbSet(NOTE,note);
   $('storedNote').textContent=note||'No note saved yet.';
@@ -508,7 +519,7 @@ async function saveNote(){
   }
   updateUXHints();
 }
-function lockAll(){sessionStorage.removeItem(SESSION_OWNER);sessionStorage.removeItem(SESSION_USER);sessionStorage.removeItem(SESSION_OWNER+'-expires');sessionStorage.removeItem(SESSION_USER+'-expires');setTrust(0,'manual lock');observe('All sessions locked','LOCK');refreshMeta();updateAccess()}
+function lockAll(){sessionStorage.removeItem(SESSION_OWNER);sessionStorage.removeItem(SESSION_USER);sessionStorage.removeItem(SESSION_OWNER+'-expires');sessionStorage.removeItem(SESSION_USER+'-expires');memoryPassed=false;setTrust(0,'manual lock');observe('All sessions locked','LOCK');refreshMeta();updateAccess()}
 function startTrustDecay(){
   if(trustDecayTimer)clearInterval(trustDecayTimer);
   trustDecayTimer=setInterval(()=>{
