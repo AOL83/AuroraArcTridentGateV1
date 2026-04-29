@@ -115,6 +115,7 @@
         <button class="btn" id="askMemoryBtn">Ask Memory Challenge</button>
         <button class="btn btn-red" id="lockAllBtn">Lock All</button>
       </div>
+      <div id="uxHint" class="warn" style="margin-top:.75rem">Next step: Start key challenge.</div>
       <label>AI prompt</label>
       <textarea id="aiPrompt" readonly placeholder="Start memory challenge..."></textarea>
       <label>Your response</label>
@@ -410,14 +411,35 @@ async function refreshMeta(){
 function updateAccess(){
   const ownerOpen=hasSession('owner')&&trust>=55;
   const userOpen=hasSession('user')&&trust>=70;
+
   $('ownerLocked').classList.toggle('hidden',ownerOpen);
   $('ownerUnlocked').classList.toggle('hidden',!ownerOpen);
   $('userLocked').classList.toggle('hidden',userOpen);
   $('userUnlocked').classList.toggle('hidden',!userOpen);
+
   $('ownerPill').textContent=ownerOpen?'OWNER: UNLOCKED':'OWNER: LOCKED';
   $('userPill').textContent=userOpen?'USER: UNLOCKED':'USER: LOCKED';
+
   $('ownerPill').style.color=ownerOpen?'#58ff9b':'#eaff38';
   $('userPill').style.color=userOpen?'#58ff9b':'#eaff38';
+
+  updateUXHints();
+}
+
+function updateUXHints(){
+  let hint='';
+
+  if(!hasSession('owner') && !hasSession('user')){
+    hint='Next step: Authenticate Owner or start User key challenge.';
+  } else if(!hasSession('user')){
+    hint='Next step: Switch to User Cabinet → Start Key Challenge.';
+  } else if(hasSession('user') && trust<70){
+    hint='Next step: Ask Memory Challenge and answer correctly.';
+  } else if(hasSession('user') && trust>=70){
+    hint='Access granted. You can use the cabinet.';
+  }
+
+  $('uxHint').textContent=hint;
 }
 async function saveNote(){
   if(!(hasSession('user')&&trust>=70)){observe('Cabinet save blocked: user not trusted enough','DENY');return}
