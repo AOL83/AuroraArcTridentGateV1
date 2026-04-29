@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#050716" />
+<meta name="referrer" content="no-referrer" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; frame-src 'self' blob: data:; base-uri 'self'; form-action 'self'; frame-ancestors 'none';" />
+<title>Aurora Arc — Trident Gate v0.3</title>
+<style>
+:root{
+  --bg:#040716;--bg2:#071426;--panel:rgba(8,18,36,.82);--panel2:rgba(0,0,0,.32);
+  --text:#eff8ff;--muted:#8fa7c6;--cyan:#58f6ff;--green:#58ff9b;--yellow:#eaff38;
+  --pink:#ff4fd8;--red:#ff4d6d;--amber:#ffd166;--line:rgba(88,246,255,.22);
+  --hot:rgba(234,255,56,.45);--radius:26px;--shadow:0 28px 90px rgba(0,0,0,.55)
+}
+*{box-sizing:border-box}html{background:var(--bg);scroll-behavior:smooth}body{margin:0;min-height:100vh;color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:radial-gradient(circle at 14% 4%,rgba(255,79,216,.18),transparent 28rem),radial-gradient(circle at 84% 10%,rgba(88,246,255,.22),transparent 36rem),radial-gradient(circle at 50% 98%,rgba(234,255,56,.12),transparent 30rem),linear-gradient(135deg,#02030b,#081426 54%,#03050e);overflow-x:hidden}body:before,body:after{content:"";position:fixed;inset:0;pointer-events:none;z-index:-1}body:before{opacity:.25;background-image:linear-gradient(rgba(88,246,255,.08) 1px,transparent 1px),linear-gradient(90deg,rgba(88,246,255,.08) 1px,transparent 1px);background-size:52px 52px;mask-image:linear-gradient(to bottom,transparent,black 16%,black 82%,transparent)}body:after{opacity:.12;background:repeating-linear-gradient(to bottom,transparent 0 5px,rgba(255,255,255,.08) 6px,transparent 7px);mix-blend-mode:overlay}button,input,textarea,select{font:inherit}button{cursor:pointer}.wrap{width:min(100% - 1.25rem,1260px);margin-inline:auto}.topbar{position:sticky;top:0;z-index:50;border-bottom:1px solid rgba(88,246,255,.14);background:rgba(3,6,16,.82);backdrop-filter:blur(18px) saturate(145%)}.topbar-inner{display:flex;align-items:center;justify-content:space-between;gap:1rem;min-height:72px}.brand{display:flex;align-items:center;gap:.75rem;color:inherit;text-decoration:none;min-width:0}.mark{display:grid;place-items:center;width:46px;height:46px;border-radius:16px;border:1px solid rgba(234,255,56,.38);background:linear-gradient(135deg,var(--yellow),var(--green));color:#041006;font-weight:950;box-shadow:0 0 34px rgba(234,255,56,.22),inset 0 0 22px rgba(255,255,255,.25)}.brand-title{display:block;font-weight:950;letter-spacing:-.04em;white-space:nowrap}.brand-sub{display:block;font-size:.72rem;font-weight:850;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}.status{display:none;gap:.5rem;align-items:center;flex-wrap:wrap}.pill{display:inline-flex;align-items:center;justify-content:center;min-height:32px;border-radius:999px;border:1px solid rgba(234,255,56,.34);padding:.35rem .7rem;background:rgba(0,0,0,.28);font-size:.72rem;font-weight:950;letter-spacing:.08em;text-transform:uppercase;color:var(--yellow);text-shadow:0 0 12px rgba(234,255,56,.32)}.screen{padding:clamp(1.25rem,4vw,3rem) 0}.grid{display:grid;gap:1rem}.two{grid-template-columns:1fr}.three{grid-template-columns:1fr}.hero,.panel,.core{position:relative;overflow:hidden;border:1px solid var(--line);border-radius:var(--radius);background:linear-gradient(135deg,rgba(255,255,255,.075),rgba(255,255,255,.025)),var(--panel);box-shadow:var(--shadow),inset 0 1px 0 rgba(255,255,255,.12)}.hero:before,.panel:before,.core:before{content:"";position:absolute;inset:-1px;border-radius:inherit;padding:1px;background:linear-gradient(135deg,rgba(88,246,255,.58),transparent 25%,rgba(255,79,216,.48),transparent 64%,rgba(234,255,56,.6));mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);mask-composite:exclude;pointer-events:none}.hero{padding:clamp(1.25rem,4vw,2.8rem);min-height:360px;display:flex;flex-direction:column;justify-content:center}.eyebrow{display:inline-flex;align-items:center;gap:.45rem;width:fit-content;margin:0 0 1rem;padding:.45rem .75rem;border:1px solid rgba(88,246,255,.28);border-radius:999px;background:rgba(88,246,255,.08);font-size:.73rem;font-weight:950;letter-spacing:.16em;text-transform:uppercase;color:var(--cyan)}.dot{width:8px;height:8px;border-radius:999px;background:var(--green);box-shadow:0 0 18px var(--green);animation:pulse 1.8s ease-in-out infinite}h1{max-width:1000px;margin:0;font-size:clamp(2.4rem,10vw,6.4rem);line-height:.88;letter-spacing:-.09em;text-wrap:balance}h2{margin:0 0 .75rem;font-size:clamp(1.35rem,4vw,2.2rem);letter-spacing:-.06em}h3{margin:.2rem 0 .4rem;font-size:1rem;color:var(--yellow)}.gradient{color:transparent;background:linear-gradient(105deg,#fff,var(--cyan) 34%,var(--pink) 66%,var(--yellow));background-clip:text;-webkit-background-clip:text;filter:drop-shadow(0 0 24px rgba(88,246,255,.16))}.copy{max-width:880px;color:#c8d8ef;font-size:clamp(1rem,2vw,1.14rem);line-height:1.65}.actions{display:flex;flex-wrap:wrap;gap:.75rem;margin-top:1.2rem}.btn{display:inline-flex;align-items:center;justify-content:center;min-height:46px;border:1px solid var(--hot);border-radius:999px;padding:.72rem .95rem;background:rgba(255,255,255,.05);color:var(--text);font-weight:950;transition:.2s ease}.btn:hover{transform:translateY(-2px);border-color:rgba(234,255,56,.85);box-shadow:0 0 32px rgba(234,255,56,.18)}.btn-primary{background:linear-gradient(135deg,var(--yellow),var(--green));color:#031008;box-shadow:0 0 34px rgba(234,255,56,.22)}.btn-red{border-color:rgba(255,77,109,.55);color:#ffd5dc}.btn-small{min-height:38px;padding:.55rem .75rem;font-size:.82rem}.panel{padding:clamp(1rem,3vw,1.45rem)}.input,textarea,select{width:100%;min-height:46px;border:1px solid rgba(88,246,255,.24);border-radius:16px;outline:none;padding:.78rem .95rem;background:rgba(0,0,0,.34);color:var(--text);font-weight:750}.input:focus,textarea:focus,select:focus{border-color:rgba(88,246,255,.78);box-shadow:0 0 0 4px rgba(88,246,255,.1)}textarea{min-height:90px;resize:vertical}label{display:block;margin:.85rem 0 .35rem;color:var(--yellow);font-size:.72rem;font-weight:950;letter-spacing:.16em;text-transform:uppercase}.log{min-height:170px;max-height:320px;overflow:auto;border:1px solid rgba(88,246,255,.16);border-radius:18px;background:rgba(0,0,0,.38);padding:.85rem;color:var(--muted);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.78rem;line-height:1.45;white-space:pre-wrap}.layer{border:1px solid rgba(255,255,255,.1);border-radius:20px;background:rgba(0,0,0,.24);padding:1rem}.layer strong{display:block;color:var(--yellow)}.layer span{display:block;color:var(--muted);font-size:.86rem;line-height:1.45;margin-top:.25rem}.score{display:grid;gap:.5rem;margin-top:.75rem}.meter{height:14px;border-radius:999px;border:1px solid rgba(88,246,255,.18);background:rgba(0,0,0,.35);overflow:hidden}.meter>span{display:block;height:100%;width:0%;background:linear-gradient(90deg,var(--red),var(--amber),var(--green));transition:.35s ease}.reader-slot{position:relative;display:grid;place-items:center;min-height:200px;border:1px dashed rgba(88,246,255,.26);border-radius:22px;background:rgba(0,0,0,.2);overflow:hidden}.card{width:min(88%,360px);aspect-ratio:1.58/1;border:1px solid rgba(234,255,56,.5);border-radius:22px;background:linear-gradient(135deg,rgba(234,255,56,.95),rgba(85,255,159,.92));color:#031008;box-shadow:0 0 48px rgba(234,255,56,.18),inset 0 0 26px rgba(255,255,255,.28);padding:1rem;display:flex;flex-direction:column;justify-content:space-between;transform:rotate(-2deg)}.chip{width:56px;height:42px;border-radius:10px;background:linear-gradient(135deg,#0b130b,#314225);box-shadow:inset 0 0 0 2px rgba(255,255,255,.14),0 0 12px rgba(0,0,0,.35)}.card-title{font-weight:1000;letter-spacing:-.04em;font-size:1.1rem}.card-sub{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.72rem;opacity:.78;word-break:break-all}.cabinet{border:1px solid rgba(234,255,56,.25);border-radius:24px;background:rgba(0,0,0,.25);padding:1rem}.cabinet.locked{filter:grayscale(.9);opacity:.72}.file{border:1px solid rgba(255,255,255,.09);border-radius:16px;background:rgba(255,255,255,.045);padding:.8rem;margin:.55rem 0}.file strong{color:var(--cyan)}.cover{display:grid;place-items:center;min-height:220px;padding:2rem;border:1px solid rgba(255,77,109,.28);border-radius:24px;background:radial-gradient(circle at center,rgba(255,77,109,.12),rgba(0,0,0,.45));text-align:center}.warn{margin-top:1rem;padding:.8rem .95rem;border:1px solid rgba(255,77,109,.32);border-radius:18px;background:rgba(255,77,109,.08);color:#ffd8df;line-height:1.5;font-size:.9rem}.ok{color:var(--green)}.bad{color:var(--red)}.muted{color:var(--muted)}.hidden{display:none!important}@keyframes pulse{50%{transform:scale(1.35);opacity:1}}@media(min-width:790px){.status{display:flex}.two{grid-template-columns:.95fr 1.05fr}.three{grid-template-columns:repeat(3,1fr)}}@media(max-width:540px){.brand-sub{display:none}.card{width:100%}.topbar-inner{min-height:64px}.mark{width:42px;height:42px}}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="wrap topbar-inner">
+    <a class="brand" href="#top">
+      <span class="mark">A</span>
+      <span><span class="brand-title">Aurora Arc v0.3</span><span class="brand-sub">Owner · user cabinet · trident gate</span></span>
+    </a>
+    <div class="status">
+      <span class="pill" id="ownerPill">OWNER: LOCKED</span>
+      <span class="pill" id="userPill">USER: LOCKED</span>
+      <span class="pill" id="trustPill">TRUST: 0</span>
+    </div>
+  </div>
+</header>
+
+<main id="top">
+<section class="screen">
+  <div class="wrap hero">
+    <p class="eyebrow"><span class="dot"></span> Arc prototype: trident authentication</p>
+    <h1><span class="gradient">The egg now has a gate, a cabinet, and a watcher.</span></h1>
+    <p class="copy">This single-file prototype gives the Arc a proper linear build: cryptographic owner key, user cabinet key, adaptive memory phrase challenge, contradiction challenge, trust score, observer log, and separate owner/user access. It is not production-grade final security. It is a working architecture seed. Tiny dragon. Real teeth.</p>
+    <div class="actions">
+      <button class="btn btn-primary" onclick="jump('setup')">Begin Setup</button>
+      <button class="btn" onclick="jump('login')">Open Gate</button>
+      <button class="btn" onclick="jump('inside')">View Inside</button>
+    </div>
+    <div class="grid three" style="margin-top:1.25rem">
+      <div class="layer"><strong>Trident 1: Key</strong><span>Owner and user each have a cryptographic keypair.</span></div>
+      <div class="layer"><strong>Trident 2: Context</strong><span>Personal phrase challenge verifies familiar context.</span></div>
+      <div class="layer"><strong>Trident 3: Observer</strong><span>Events influence trust score and gate response.</span></div>
+    </div>
+    <div class="warn">This page runs locally in the browser. The browser remains user-controlled. The purpose here is to prove the model: identity proof + context proof + observer logic. Backend/WebAuthn/blockchain can come later, after the egg stops wearing floaties.</div>
+  </div>
+</section>
+
+<section class="screen" id="setup">
+  <div class="wrap grid two">
+    <div class="panel">
+      <p class="eyebrow"><span class="dot"></span> 1 · Birth the owner</p>
+      <h2><span class="gradient">Owner root key</span></h2>
+      <p class="copy" style="font-size:1rem">The owner key is root authority. It can create/reset the user cabinet and unlock the owner core.</p>
+      <label>Owner label</label>
+      <input class="input" id="ownerLabel" value="Aurora Original Owner" autocomplete="off" />
+      <div class="actions">
+        <button class="btn btn-primary" id="createOwnerBtn">Create Owner Key</button>
+        <button class="btn" id="authOwnerBtn">Authenticate Owner</button>
+        <button class="btn btn-red" id="wipeOwnerBtn">Wipe Owner</button>
+      </div>
+      <div class="reader-slot" style="margin-top:1rem">
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;gap:1rem;align-items:flex-start">
+            <div><div class="card-title" id="ownerCardTitle">NO OWNER</div><div class="card-sub" id="ownerCardId">Create root key first</div></div>
+            <div class="chip"></div>
+          </div>
+          <div><div class="card-sub">ARC OWNER CHIP</div><div class="card-sub" id="ownerFp">Fingerprint: —</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <p class="eyebrow"><span class="dot"></span> 2 · Create user cabinet</p>
+      <h2><span class="gradient">User key + memory seed</span></h2>
+      <p class="copy" style="font-size:1rem">The user key opens only the user cabinet. The memory layer adds personal challenge friction.</p>
+      <label>User label</label>
+      <input class="input" id="userLabel" value="Primary User" autocomplete="off" />
+      <label>Private prompt</label>
+      <input class="input" id="seedPrompt" value="See you later, alligator" autocomplete="off" />
+      <label>Expected response</label>
+      <input class="input" id="seedAnswer" value="In a while, crocodile" autocomplete="off" />
+      <label>Contradiction prompt</label>
+      <input class="input" id="contraPrompt" value="Did you have extra cream with your coffee today?" autocomplete="off" />
+      <label>Expected contradiction response</label>
+      <input class="input" id="contraAnswer" value="Why are you asking me that? You know I'm lactose intolerant." autocomplete="off" />
+      <div class="actions">
+        <button class="btn btn-primary" id="createUserBtn">Create User Cabinet</button>
+        <button class="btn" id="addPhraseBtn">Add Phrase Pair</button>
+        <button class="btn btn-red" id="wipeUserBtn">Wipe User</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="screen" id="login">
+  <div class="wrap grid two">
+    <div class="panel">
+      <p class="eyebrow"><span class="dot"></span> 3 · Open the gate</p>
+      <h2><span class="gradient">Trident login</span></h2>
+      <p class="copy" style="font-size:1rem">Authenticate with key proof, then answer one adaptive context prompt. The trust score decides if the cabinet opens.</p>
+      <label>Role</label>
+      <select id="loginRole">
+        <option value="user">User Cabinet</option>
+        <option value="owner">Owner Core</option>
+      </select>
+      <div class="actions">
+        <button class="btn btn-primary" id="startLoginBtn">Start Key Challenge</button>
+        <button class="btn" id="askMemoryBtn">Ask Memory Challenge</button>
+        <button class="btn btn-red" id="lockAllBtn">Lock All</button>
+      </div>
+      <label>AI prompt</label>
+      <textarea id="aiPrompt" readonly placeholder="Start memory challenge..."></textarea>
+      <label>Your response</label>
+      <textarea id="memoryResponse" placeholder="Respond here..."></textarea>
+      <div class="actions">
+        <button class="btn" id="speakPromptBtn">🔊 Speak Prompt</button>
+        <button class="btn" id="voiceAnswerBtn">🎙️ Voice Answer</button>
+        <button class="btn btn-primary" id="submitMemoryBtn">Submit Response</button>
+      </div>
+      <div class="score">
+        <div class="meter"><span id="trustMeter"></span></div>
+        <div class="muted">Trust score: <strong id="trustScoreText">0</strong> / 100 · Required: 70</div>
+      </div>
+    </div>
+    <div class="panel">
+      <p class="eyebrow"><span class="dot"></span> Observer</p>
+      <h2><span class="gradient">Security event log</span></h2>
+      <div class="log" id="log">Arc observer online.
+Waiting for setup.</div>
+      <div class="actions">
+        <button class="btn" id="exportStateBtn">Export Backup</button>
+        <button class="btn" id="importStateBtn">Import Backup</button>
+        <input type="file" id="backupFile" class="hidden" accept=".json,application/json" />
+        <button class="btn btn-red" id="factoryBtn">Factory Reset</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="screen" id="inside">
+  <div class="wrap grid two">
+    <div class="panel cabinet" id="ownerCore">
+      <p class="eyebrow"><span class="dot"></span> Owner core</p>
+      <h2><span class="gradient">Root shell</span></h2>
+      <div id="ownerLocked" class="cover"><div><h2>Owner locked</h2><p class="copy">Authenticate as owner to access root actions.</p></div></div>
+      <div id="ownerUnlocked" class="hidden">
+        <p class="copy">Owner authenticated. Root controls available.</p>
+        <div class="file"><strong>Create cabinet authority</strong><br><span class="muted">Owner can create/replace the user cabinet.</span></div>
+        <div class="file"><strong>Observer authority</strong><br><span class="muted">Owner can review access log and export state.</span></div>
+        <div class="file"><strong>Emergency lock</strong><br><span class="muted">Owner can lock all active sessions.</span></div>
+      </div>
+    </div>
+
+    <div class="panel cabinet" id="userCabinet">
+      <p class="eyebrow"><span class="dot"></span> User cabinet</p>
+      <h2><span class="gradient">Personal filing cabinet</span></h2>
+      <div id="userLocked" class="cover"><div><h2>User cabinet locked</h2><p class="copy">Authenticate as user and pass the context layer to open.</p></div></div>
+      <div id="userUnlocked" class="hidden">
+        <p class="copy">User cabinet unlocked. This is where encrypted files, identity permissions, and future AI tools would live.</p>
+        <label>Cabinet note</label>
+        <textarea id="cabinetNote" placeholder="Write a local cabinet note..."></textarea>
+        <div class="actions"><button class="btn btn-primary" id="saveNoteBtn">Save Note</button></div>
+        <div class="file"><strong>Stored note</strong><br><span id="storedNote" class="muted">No note saved yet.</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+
+<script>
+const DB_NAME='aurora-arc-v03-db';
+const DB_VERSION=1;
+const STORE='arc';
+const OWNER_PRIV='owner-private';
+const OWNER_PUB='owner-public';
+const OWNER_META='owner-meta';
+const USER_PRIV='user-private';
+const USER_PUB='user-public';
+const USER_META='user-meta';
+const PHRASES='phrase-library';
+const NOTE='cabinet-note';
+const SESSION_OWNER='arc-owner-session';
+const SESSION_USER='arc-user-session';
+const enc=new TextEncoder();
+const $=id=>document.getElementById(id);
+let currentPrompt=null;
+let trust=0;
+let recognizer=null;
+let listening=false;
+let failedAttempts=0;
+let lockoutUntil=0;
+let lastPromptText='';
+let trustDecayTimer=null;
+const MAX_FAILED_ATTEMPTS=4;
+const LOCKOUT_MS=60_000;
+const SESSION_MS=5*60_000;
+const TRUST_DECAY_EVERY_MS=30_000;
+const TRUST_DECAY_AMOUNT=5;
+
+function jump(id){document.getElementById(id).scrollIntoView({behavior:'smooth'})}
+function now(){return new Date().toLocaleTimeString()}
+function observe(msg,type='INFO'){$('log').textContent+=`\n[${now()}] [${type}] ${msg}`;$('log').scrollTop=$('log').scrollHeight}
+function isLockedOut(){
+  if(Date.now()<lockoutUntil){
+    const secs=Math.ceil((lockoutUntil-Date.now())/1000);
+    observe(`Gate locked for ${secs}s after repeated failed attempts`,'LOCK');
+    return true;
+  }
+  return false;
+}
+function recordFailure(reason){
+  failedAttempts++;
+  observe(`Failure ${failedAttempts}/${MAX_FAILED_ATTEMPTS}: ${reason}`,'DENY');
+  if(failedAttempts>=MAX_FAILED_ATTEMPTS){
+    lockoutUntil=Date.now()+LOCKOUT_MS;
+    failedAttempts=0;
+    lockAll();
+    observe('Hard lockout triggered. Sessions killed. Trust reset.','LOCK');
+  }
+}
+function recordSuccess(reason){
+  if(failedAttempts>0)observe(`Failure counter reset after success: ${reason}`,'OK');
+  failedAttempts=0;
+}
+function setTrust(n,reason=''){
+  trust=Math.max(0,Math.min(100,n));
+  $('trustMeter').style.width=trust+'%';$('trustScoreText').textContent=trust;$('trustPill').textContent='TRUST: '+trust;if(reason)observe(`Trust ${trust}: ${reason}`,'TRUST');updateAccess()
+}
+function addTrust(n,reason){setTrust(trust+n,reason)}
+function hasSession(role){return sessionValid(role)}
+function setSession(role,on){
+  const key=role==='owner'?SESSION_OWNER:SESSION_USER;
+  if(on){
+    sessionStorage.setItem(key,'true');
+    sessionStorage.setItem(key+'-expires',String(Date.now()+SESSION_MS));
+    observe(`${role} session opened for ${Math.round(SESSION_MS/60000)} minutes`,'OK');
+  }else{
+    sessionStorage.removeItem(key);
+    sessionStorage.removeItem(key+'-expires');
+  }
+  updateAccess()
+}
+function sessionValid(role){
+  const key=role==='owner'?SESSION_OWNER:SESSION_USER;
+  if(sessionStorage.getItem(key)!=='true')return false;
+  const exp=Number(sessionStorage.getItem(key+'-expires')||0);
+  if(Date.now()>exp){
+    sessionStorage.removeItem(key);sessionStorage.removeItem(key+'-expires');
+    observe(`${role} session expired`,'LOCK');
+    return false;
+  }
+  return true;
+}
+function normalize(s){return (s||'').toLowerCase().replace(/[’']/g,"'").replace(/[^a-z0-9' ]+/g,' ').replace(/\s+/g,' ').trim()}
+function similarity(a,b){a=normalize(a);b=normalize(b);if(!a||!b)return 0;if(a===b)return 1;const aw=new Set(a.split(' '));const bw=new Set(b.split(' '));let inter=0;aw.forEach(w=>{if(bw.has(w))inter++});const union=new Set([...aw,...bw]).size;return union?inter/union:0}
+function bytesToBase64(bytes){let str='';bytes.forEach(b=>str+=String.fromCharCode(b));return btoa(str)}
+async function sha256Text(text){const digest=await crypto.subtle.digest('SHA-256',enc.encode(text));return [...new Uint8Array(digest)].map(b=>b.toString(16).padStart(2,'0')).join('')}
+function challenge(){const b=new Uint8Array(32);crypto.getRandomValues(b);return b}
+
+function openDB(){return new Promise((resolve,reject)=>{const req=indexedDB.open(DB_NAME,DB_VERSION);req.onupgradeneeded=()=>{const db=req.result;if(!db.objectStoreNames.contains(STORE))db.createObjectStore(STORE)};req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error)})}
+async function dbSet(k,v){const db=await openDB();return new Promise((resolve,reject)=>{const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).put(v,k);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)})}
+async function dbGet(k){const db=await openDB();return new Promise((resolve,reject)=>{const tx=db.transaction(STORE,'readonly');const req=tx.objectStore(STORE).get(k);req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error)})}
+async function dbDel(k){const db=await openDB();return new Promise((resolve,reject)=>{const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).delete(k);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)})}
+async function dbClear(){const db=await openDB();return new Promise((resolve,reject)=>{const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).clear();tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)})}
+
+async function createKeyPair(label,type){
+  const pair=await crypto.subtle.generateKey({name:'ECDSA',namedCurve:'P-256'},false,['sign','verify']);
+  const publicJwk=await crypto.subtle.exportKey('jwk',pair.publicKey);
+  const fingerprint=(await sha256Text(JSON.stringify(publicJwk))).slice(0,24).match(/.{1,4}/g).join('-');
+  const meta={label,fingerprint,createdAt:new Date().toISOString(),type,algorithm:'ECDSA P-256 SHA-256'};
+  if(type==='owner'){await dbSet(OWNER_PRIV,pair.privateKey);await dbSet(OWNER_PUB,publicJwk);await dbSet(OWNER_META,meta)}
+  else{await dbSet(USER_PRIV,pair.privateKey);await dbSet(USER_PUB,publicJwk);await dbSet(USER_META,meta)}
+  observe(`${type} key created: ${fingerprint}`,'OK');
+  await refreshMeta();
+}
+async function getKeys(type){
+  const priv=await dbGet(type==='owner'?OWNER_PRIV:USER_PRIV);
+  const pubJwk=await dbGet(type==='owner'?OWNER_PUB:USER_PUB);
+  const meta=await dbGet(type==='owner'?OWNER_META:USER_META);
+  if(!priv||!pubJwk||!meta)return null;
+  const pub=await crypto.subtle.importKey('jwk',pubJwk,{name:'ECDSA',namedCurve:'P-256'},true,['verify']);
+  return{priv,pub,pubJwk,meta};
+}
+async function authKey(type){
+  if(isLockedOut())return false;
+  const keys=await getKeys(type);
+  if(!keys){observe(`No ${type} key found`,'DENY');addTrust(-10,`missing ${type} key`);recordFailure(`missing ${type} key`);return false}
+  const ch=challenge();
+  const tag=bytesToBase64(ch).slice(0,18);
+  observe(`${type} challenge issued: ${tag}...`,'READ');
+  const payload=enc.encode(`aurora-arc-v03:${type}:${tag}:${location.origin}:${Date.now()}`);
+  const sig=await crypto.subtle.sign({name:'ECDSA',hash:'SHA-256'},keys.priv,payload);
+  const ok=await crypto.subtle.verify({name:'ECDSA',hash:'SHA-256'},keys.pub,sig,payload);
+  if(ok){setSession(type,true);addTrust(type==='owner'?55:45,`${type} key proof passed`);observe(`${type} cryptographic proof verified`,'OK');recordSuccess(`${type} key proof`)}
+  else{setSession(type,false);addTrust(-25,`${type} key proof failed`);observe(`${type} key proof rejected`,'DENY');recordFailure(`${type} key proof failed`)}
+  return ok;
+}
+
+async function addPhrasePair(){
+  const prompt=$('seedPrompt').value.trim();
+  const answer=$('seedAnswer').value.trim();
+  const contraPrompt=$('contraPrompt').value.trim();
+  const contraAnswer=$('contraAnswer').value.trim();
+  if(!prompt||!answer)return observe('Phrase pair needs prompt and response','WARN');
+  const list=await dbGet(PHRASES)||[];
+  list.push({type:'phrase',prompt,answer,createdAt:new Date().toISOString()});
+  if(contraPrompt&&contraAnswer)list.push({type:'contradiction',prompt:contraPrompt,answer:contraAnswer,createdAt:new Date().toISOString()});
+  await dbSet(PHRASES,list);
+  observe(`Added ${contraPrompt&&contraAnswer?'2':'1'} memory challenge(s). Total: ${list.length}`,'OK');
+}
+async function askMemory(){
+  const list=await dbGet(PHRASES)||[];
+  if(!list.length){observe('No phrase library found. Add phrase pair first.','WARN');return}
+  let pool=list.length>1?list.filter(x=>x.prompt!==lastPromptText):list;
+  if(!pool.length)pool=list;
+  currentPrompt=pool[Math.floor(Math.random()*pool.length)];
+  lastPromptText=currentPrompt.prompt;
+  $('aiPrompt').value=currentPrompt.prompt;
+  $('memoryResponse').value='';
+  observe(`AI issued ${currentPrompt.type} challenge`,'AI');
+}
+function speakText(text){
+  if(!('speechSynthesis' in window)){observe('Speech synthesis not supported in this browser','WARN');return}
+  window.speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(text);
+  u.rate=.92;
+  u.pitch=1;
+  u.volume=1;
+  window.speechSynthesis.speak(u);
+  observe('Prompt spoken aloud','VOICE');
+}
+function setupRecognizer(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){observe('Speech recognition not supported. Try Chrome/Edge over HTTPS or localhost.','WARN');return null}
+  const r=new SR();
+  r.lang='en-GB';
+  r.interimResults=true;
+  r.continuous=false;
+  r.maxAlternatives=1;
+  r.onstart=()=>{listening=true;$('voiceAnswerBtn').textContent='🛑 Stop Listening';observe('Voice answer listening...','VOICE')};
+  r.onend=()=>{listening=false;$('voiceAnswerBtn').textContent='🎙️ Voice Answer';observe('Voice listener stopped','VOICE')};
+  r.onerror=e=>{listening=false;$('voiceAnswerBtn').textContent='🎙️ Voice Answer';observe('Voice error: '+e.error,'WARN')};
+  r.onresult=e=>{
+    let finalText='';let interim='';
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      const text=e.results[i][0].transcript;
+      if(e.results[i].isFinal)finalText+=text;else interim+=text;
+    }
+    const existing=$('memoryResponse').value.trim();
+    if(finalText){$('memoryResponse').value=(existing?existing+' ':'')+finalText.trim();observe('Voice answer captured','VOICE')}
+    else if(interim){$('memoryResponse').placeholder='Hearing: '+interim.trim()}
+  };
+  return r;
+}
+function toggleVoiceAnswer(){
+  if(listening&&recognizer){recognizer.stop();return}
+  recognizer=setupRecognizer();
+  if(recognizer){try{recognizer.start()}catch(e){observe('Could not start voice recognition: '+e.message,'WARN')}}
+}
+function evalMemory(){
+  if(isLockedOut())return;
+  if(!currentPrompt){observe('No active memory challenge','WARN');recordFailure('submitted without active challenge');return}
+  const res=$('memoryResponse').value.trim();
+  const score=similarity(res,currentPrompt.answer);
+  if(score>=.86){addTrust(35,'memory phrase matched strongly');observe('Memory challenge passed','OK');recordSuccess('memory challenge')}
+  else if(score>=.55){addTrust(12,'memory phrase partially matched');observe(`Memory challenge partial match (${Math.round(score*100)}%)`,'WARN')}
+  else{addTrust(-30,'memory phrase mismatch');observe(`Memory challenge failed (${Math.round(score*100)}%)`,'DENY');recordFailure('memory phrase mismatch')}
+  currentPrompt=null;
+  $('aiPrompt').value='';
+}
+
+async function refreshMeta(){
+  const om=await dbGet(OWNER_META);const um=await dbGet(USER_META);
+  $('ownerCardTitle').textContent=om?om.label:'NO OWNER';
+  $('ownerCardId').textContent=om?'Created: '+new Date(om.createdAt).toLocaleString():'Create root key first';
+  $('ownerFp').textContent=om?'Fingerprint: '+om.fingerprint:'Fingerprint: —';
+  $('ownerPill').textContent=hasSession('owner')?'OWNER: UNLOCKED':'OWNER: LOCKED';
+  $('userPill').textContent=hasSession('user')?'USER: UNLOCKED':'USER: LOCKED';
+  $('ownerPill').style.color=hasSession('owner')?'#58ff9b':'#eaff38';
+  $('userPill').style.color=hasSession('user')?'#58ff9b':'#eaff38';
+  if(!um)observe('No user cabinet registered yet.','INFO');
+  const note=await dbGet(NOTE);$('storedNote').textContent=note||'No note saved yet.';
+}
+function updateAccess(){
+  const ownerOpen=hasSession('owner')&&trust>=55;
+  const userOpen=hasSession('user')&&trust>=70;
+  $('ownerLocked').classList.toggle('hidden',ownerOpen);
+  $('ownerUnlocked').classList.toggle('hidden',!ownerOpen);
+  $('userLocked').classList.toggle('hidden',userOpen);
+  $('userUnlocked').classList.toggle('hidden',!userOpen);
+  $('ownerPill').textContent=ownerOpen?'OWNER: UNLOCKED':'OWNER: LOCKED';
+  $('userPill').textContent=userOpen?'USER: UNLOCKED':'USER: LOCKED';
+  $('ownerPill').style.color=ownerOpen?'#58ff9b':'#eaff38';
+  $('userPill').style.color=userOpen?'#58ff9b':'#eaff38';
+}
+async function saveNote(){
+  if(!(hasSession('user')&&trust>=70)){observe('Cabinet save blocked: user not trusted enough','DENY');return}
+  await dbSet(NOTE,$('cabinetNote').value.trim());
+  $('storedNote').textContent=$('cabinetNote').value.trim()||'No note saved yet.';
+  observe('Cabinet note saved locally','OK');
+}
+function lockAll(){sessionStorage.removeItem(SESSION_OWNER);sessionStorage.removeItem(SESSION_USER);sessionStorage.removeItem(SESSION_OWNER+'-expires');sessionStorage.removeItem(SESSION_USER+'-expires');setTrust(0,'manual lock');observe('All sessions locked','LOCK');refreshMeta();updateAccess()}
+function startTrustDecay(){
+  if(trustDecayTimer)clearInterval(trustDecayTimer);
+  trustDecayTimer=setInterval(()=>{
+    if(trust>0){setTrust(trust-TRUST_DECAY_AMOUNT,'automatic trust decay')}
+    updateAccess();
+  },TRUST_DECAY_EVERY_MS);
+}
+
+async function exportState(){
+  const data={ownerMeta:await dbGet(OWNER_META),userMeta:await dbGet(USER_META),phrases:await dbGet(PHRASES)||[],note:await dbGet(NOTE)||'',exportedAt:new Date().toISOString(),warning:'Private keys are not exported in this prototype.'};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='aurora-arc-v03-backup-public.json';a.click();URL.revokeObjectURL(a.href);
+  observe('Exported public backup. Private keys intentionally excluded.','OK');
+}
+function importState(){ $('backupFile').click() }
+async function handleImport(file){
+  const text=await file.text();const data=JSON.parse(text);
+  if(Array.isArray(data.phrases))await dbSet(PHRASES,data.phrases);
+  if(typeof data.note==='string')await dbSet(NOTE,data.note);
+  observe('Imported phrase library/note. Keys are not restored by this public backup.','OK');
+  refreshMeta();
+}
+async function factoryReset(){await dbClear();sessionStorage.clear();setTrust(0,'factory reset');observe('Factory reset complete','LOCK');await refreshMeta();updateAccess()}
+
+$('createOwnerBtn').onclick=()=>createKeyPair($('ownerLabel').value.trim()||'Aurora Original Owner','owner');
+$('authOwnerBtn').onclick=()=>authKey('owner');
+$('wipeOwnerBtn').onclick=async()=>{await dbDel(OWNER_PRIV);await dbDel(OWNER_PUB);await dbDel(OWNER_META);setSession('owner',false);observe('Owner wiped','LOCK');refreshMeta()};
+$('createUserBtn').onclick=async()=>{const ok=hasSession('owner');if(!ok){observe('Owner session required before creating user cabinet','DENY');return}await createKeyPair($('userLabel').value.trim()||'Primary User','user');await addPhrasePair()};
+$('addPhraseBtn').onclick=()=>addPhrasePair();
+$('wipeUserBtn').onclick=async()=>{await dbDel(USER_PRIV);await dbDel(USER_PUB);await dbDel(USER_META);await dbDel(PHRASES);await dbDel(NOTE);setSession('user',false);observe('User cabinet wiped','LOCK');refreshMeta()};
+$('startLoginBtn').onclick=()=>authKey($('loginRole').value);
+$('askMemoryBtn').onclick=()=>askMemory();
+$('speakPromptBtn').onclick=()=>{const text=$('aiPrompt').value.trim();if(!text){observe('No prompt to speak yet','WARN');return}speakText(text)};
+$('voiceAnswerBtn').onclick=()=>toggleVoiceAnswer();
+$('submitMemoryBtn').onclick=()=>evalMemory();
+$('lockAllBtn').onclick=()=>lockAll();
+$('saveNoteBtn').onclick=()=>saveNote();
+$('exportStateBtn').onclick=()=>exportState();
+$('importStateBtn').onclick=()=>importState();
+$('backupFile').onchange=e=>{const f=e.target.files[0];if(f)handleImport(f).catch(err=>observe('Import failed: '+err.message,'ERR'))};
+$('factoryBtn').onclick=()=>factoryReset();
+
+refreshMeta();updateAccess();setTrust(0);startTrustDecay();observe('Hardening active: session expiry, trust decay, failed-attempt lockout, prompt rotation.','OK');
+</script>
+</body>
+</html>
