@@ -207,6 +207,7 @@ const enc=new TextEncoder();
 const $=id=>document.getElementById(id);
 let currentPrompt=null;
 let trust=0;
+let trustPenalty=0;
 let memoryPassed=false;
 let userKeyRegistered=false;
 let guideStep=1;
@@ -254,21 +255,38 @@ function recordSuccess(reason){
   if(failedAttempts>0)observe(`Failure counter reset after success: ${reason}`,'OK');
   failedAttempts=0;
 }
-function setTrust(n,reason=''){
-  // Peak lock logic
-  if(n>=100 && trust<100){
+function trustCeiling(){
+  // Derived from current valid security state only.
+  // Guide progress never contributes.
+  if(hasSession('user') && memoryPassed) return 100;
+  if(hasSession('user')) return 65;
+  if(hasSession('owner')) return 55;
+  return 0;
+}
+function recalcTrust(reason=''){
+  const ceiling=trustCeiling();
+  const next=Math.max(0,Math.min(100,ceiling-trustPenalty));
+
+  if(next>=100 && trust<100){
     peakLockUntil=Date.now()+PEAK_LOCK_MS;
     observe('Peak trust reached. Locking at 100 for 60s.','LOCK');
   }
 
-  // If peak lock active, prevent decay below 100
-  if(Date.now()<peakLockUntil && n<100){
-    observe('Peak lock active. Decay paused.','LOCK');
-    n=100;
-  }
-
+  trust=next;
+  $('trustMeter').style.width=trust+'%';
+  $('trustScoreText').textContent=trust;
+  $('trustPill').textContent='TRUST: '+trust;
+  if(reason)observe(`Security confidence ${trust}: ${reason}`,'TRUST');
+  updateAccess();
+}
+function setTrust(n,reason=''){
+  // Display-only setter. Use recalcTrust() for real security state.
   trust=Math.max(0,Math.min(100,n));
-  $('trustMeter').style.width=trust+'%';$('trustScoreText').textContent=trust;$('trustPill').textContent='TRUST: '+trust;if(reason)observe(`Trust ${trust}: ${reason}`,'TRUST');updateAccess()
+  $('trustMeter').style.width=trust+'%';
+  $('trustScoreText').textContent=trust;
+  $('trustPill').textContent='TRUST: '+trust;
+  if(reason)observe(`Security confidence ${trust}: ${reason}`,'TRUST');
+  updateAccess();
 }
 function addTrust(n,reason){setTrust(trust+n,reason)}
 function hasSession(role){return sessionValid(role)}
@@ -328,7 +346,7 @@ async function getKeys(type){
 async function authKey(type){
   if(isLockedOut())return false;
   const keys=await getKeys(type);
-  if(!keys){observe(`No ${type} key found`,'DENY');addTrust(-10,`missing ${type} key`);recordFailure(`missing ${type} key`);return false}
+  if(!keys){observe(`No ${type} key found`,'DENY');trustPenalty+=10;recalcTrust(`missing ${type} key`);recordFailure(`missing ${type} key`);return false}
   const ch=challenge();
   const tag=bytesToBase64(ch).slice(0,18);
   observe(`${type} challenge issued: ${tag}...`,'READ');
@@ -340,18 +358,18 @@ async function authKey(type){
     setSession(type,true);
 
     if(type==='owner'){
-      setTrust(Math.max(trust,55),'owner key proof passed');
+      trustPenalty=0;recalcTrust('owner key proof passed');
     } else {
       // User key proves identity, but must NOT complete the trident alone.
       // Cap pre-memory trust below the cabinet threshold so memory remains mandatory.
-      setTrust(Math.min(Math.max(trust,65),65),'user key proof passed · memory proof pending');
+      trustPenalty=0;recalcTrust('user key proof passed · memory proof pending');
     }
 
     observe(`${type} cryptographic proof verified`,'OK');
     if(type==='user')observe('User key accepted. Memory challenge still required before cabinet unlock.','LOCK');
     recordSuccess(`${type} key proof`)
   }
-  else{setSession(type,false);addTrust(-25,`${type} key proof failed`);observe(`${type} key proof rejected`,'DENY');recordFailure(`${type} key proof failed`)}
+  else{setSession(type,false);trustPenalty+=25;recalcTrust(`${type} key proof failed`);observe(`${type} key proof rejected`,'DENY');recordFailure(`${type} key proof failed`)}
   return ok;
 }
 
@@ -422,9 +440,9 @@ function evalMemory(){
   if(!currentPrompt){observe('No active memory challenge','WARN');recordFailure('submitted without active challenge');return}
   const res=$('memoryResponse').value.trim();
   const score=similarity(res,currentPrompt.answer);
-  if(score>=.86){memoryPassed=true;setTrust(100,'memory phrase matched strongly · full trident satisfied');observe('Memory challenge passed. Trident context layer satisfied.','OK');recordSuccess('memory challenge')}
-  else if(score>=.55){addTrust(12,'memory phrase partially matched');observe(`Memory challenge partial match (${Math.round(score*100)}%)`,'WARN')}
-  else{addTrust(-30,'memory phrase mismatch');observe(`Memory challenge failed (${Math.round(score*100)}%)`,'DENY');recordFailure('memory phrase mismatch')}
+  if(score>=.86){memoryPassed=true;trustPenalty=0;recalcTrust('memory phrase matched strongly · full trident satisfied');observe('Memory challenge passed. Trident context layer satisfied.','OK');recordSuccess('memory challenge')}
+  else if(score>=.55){trustPenalty=Math.max(0,trustPenalty-5);recalcTrust('memory phrase partially matched');observe(`Memory challenge partial match (${Math.round(score*100)}%)`,'WARN')}
+  else{trustPenalty+=30;recalcTrust('memory phrase mismatch');observe(`Memory challenge failed (${Math.round(score*100)}%)`,'DENY');recordFailure('memory phrase mismatch')}
   currentPrompt=null;
   $('aiPrompt').value='';
 }
@@ -507,7 +525,7 @@ async function saveNote(){
   }
   updateUXHints();
 }
-function lockAll(){sessionStorage.removeItem(SESSION_OWNER);sessionStorage.removeItem(SESSION_USER);sessionStorage.removeItem(SESSION_OWNER+'-expires');sessionStorage.removeItem(SESSION_USER+'-expires');memoryPassed=false;setTrust(0,'manual lock');observe('All sessions locked','LOCK');refreshMeta();resetGuide();updateAccess()}
+function lockAll(){sessionStorage.removeItem(SESSION_OWNER);sessionStorage.removeItem(SESSION_USER);sessionStorage.removeItem(SESSION_OWNER+'-expires');sessionStorage.removeItem(SESSION_USER+'-expires');memoryPassed=false;trustPenalty=0;setTrust(0,'manual lock');observe('All sessions locked','LOCK');refreshMeta();resetGuide();updateAccess()}
 function startTrustDecay(){
   if(trustDecayTimer)clearInterval(trustDecayTimer);
   trustDecayTimer=setInterval(()=>{
@@ -520,7 +538,7 @@ function startTrustDecay(){
       peakLockUntil=0;
     }
 
-    if(trust>0){setTrust(trust-TRUST_DECAY_AMOUNT,'automatic trust decay')}
+    if(trust>0){trustPenalty+=TRUST_DECAY_AMOUNT;recalcTrust('automatic trust decay')}
     updateAccess();
   },TRUST_DECAY_EVERY_MS);
 }
@@ -561,7 +579,7 @@ $('importStateBtn').onclick=()=>importState();
 $('backupFile').onchange=e=>{const f=e.target.files[0];if(f)handleImport(f).catch(err=>observe('Import failed: '+err.message,'ERR'))};
 $('factoryBtn').onclick=()=>factoryReset();
 
-refreshMeta();updateAccess();setTrust(0);startTrustDecay();observe('Hardening active: session expiry, trust decay, failed-attempt lockout, prompt rotation.','OK');
+refreshMeta();updateAccess();recalcTrust();startTrustDecay();observe('Hardening active: derived trust, session expiry, trust decay, failed-attempt lockout, prompt rotation.','OK');
 </script>
 </body>
 </html>
