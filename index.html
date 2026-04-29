@@ -203,6 +203,8 @@ const LOCKOUT_MS=60_000;
 const SESSION_MS=5*60_000;
 const TRUST_DECAY_EVERY_MS=30_000;
 const TRUST_DECAY_AMOUNT=5;
+const PEAK_LOCK_MS=60_000;
+let peakLockUntil=0;
 
 function jump(id){document.getElementById(id).scrollIntoView({behavior:'smooth'})}
 function now(){return new Date().toLocaleTimeString()}
@@ -216,6 +218,11 @@ function isLockedOut(){
   return false;
 }
 function recordFailure(reason){
+  // Break peak lock on suspicious behavior
+  if(Date.now()<peakLockUntil){
+    peakLockUntil=0;
+    observe('Peak lock broken due to suspicious behavior','DENY');
+  }
   failedAttempts++;
   observe(`Failure ${failedAttempts}/${MAX_FAILED_ATTEMPTS}: ${reason}`,'DENY');
   if(failedAttempts>=MAX_FAILED_ATTEMPTS){
@@ -230,6 +237,18 @@ function recordSuccess(reason){
   failedAttempts=0;
 }
 function setTrust(n,reason=''){
+  // Peak lock logic
+  if(n>=100 && trust<100){
+    peakLockUntil=Date.now()+PEAK_LOCK_MS;
+    observe('Peak trust reached. Locking at 100 for 60s.','LOCK');
+  }
+
+  // If peak lock active, prevent decay below 100
+  if(Date.now()<peakLockUntil && n<100){
+    observe('Peak lock active. Decay paused.','LOCK');
+    n=100;
+  }
+
   trust=Math.max(0,Math.min(100,n));
   $('trustMeter').style.width=trust+'%';$('trustScoreText').textContent=trust;$('trustPill').textContent='TRUST: '+trust;if(reason)observe(`Trust ${trust}: ${reason}`,'TRUST');updateAccess()
 }
@@ -408,6 +427,21 @@ async function saveNote(){
 }
 function lockAll(){sessionStorage.removeItem(SESSION_OWNER);sessionStorage.removeItem(SESSION_USER);sessionStorage.removeItem(SESSION_OWNER+'-expires');sessionStorage.removeItem(SESSION_USER+'-expires');setTrust(0,'manual lock');observe('All sessions locked','LOCK');refreshMeta();updateAccess()}
 function startTrustDecay(){
+  if(trustDecayTimer)clearInterval(trustDecayTimer);
+  trustDecayTimer=setInterval(()=>{
+    if(Date.now()<peakLockUntil){
+      return; // still in peak lock window
+    }
+
+    if(peakLockUntil && Date.now()>=peakLockUntil){
+      observe('Peak window expired → decay resumed','LOCK');
+      peakLockUntil=0;
+    }
+
+    if(trust>0){setTrust(trust-TRUST_DECAY_AMOUNT,'automatic trust decay')}
+    updateAccess();
+  },TRUST_DECAY_EVERY_MS);
+}
   if(trustDecayTimer)clearInterval(trustDecayTimer);
   trustDecayTimer=setInterval(()=>{
     if(trust>0){setTrust(trust-TRUST_DECAY_AMOUNT,'automatic trust decay')}
