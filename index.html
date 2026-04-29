@@ -442,12 +442,6 @@ function startTrustDecay(){
     updateAccess();
   },TRUST_DECAY_EVERY_MS);
 }
-  if(trustDecayTimer)clearInterval(trustDecayTimer);
-  trustDecayTimer=setInterval(()=>{
-    if(trust>0){setTrust(trust-TRUST_DECAY_AMOUNT,'automatic trust decay')}
-    updateAccess();
-  },TRUST_DECAY_EVERY_MS);
-}
 
 async function exportState(){
   const data={ownerMeta:await dbGet(OWNER_META),userMeta:await dbGet(USER_META),phrases:await dbGet(PHRASES)||[],note:await dbGet(NOTE)||'',exportedAt:new Date().toISOString(),warning:'Private keys are not exported in this prototype.'};
