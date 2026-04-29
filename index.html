@@ -59,7 +59,7 @@
       <div class="layer"><strong>Trident 2: Context</strong><span>Personal phrase challenge verifies familiar context.</span></div>
       <div class="layer"><strong>Trident 3: Observer</strong><span>Events influence trust score and gate response.</span></div>
     </div>
-    <div class="warn">This page runs locally in the browser. The browser remains user-controlled. The purpose here is to prove the model: identity proof + context proof + observer logic. Backend/WebAuthn/blockchain can come later, after the egg stops wearing floaties.</div>
+    <div class="warn">This page runs locally in the browser. The browser remains user-controlled. The purpose here is to prove the model: identity proof + context proof + observer logic. Later, these sections can be separated into network-linked modules: owner authority, user cabinet, observer, and verification node. Backend/WebAuthn/blockchain can come later, after the egg stops wearing floaties.</div>
   </div>
 </section>
 
@@ -127,6 +127,7 @@
         <button class="btn btn-red" id="lockAllBtn">Lock All</button>
       </div>
       <div id="uxHint" class="warn guide-hint" style="margin-top:.75rem">Next step: Start key challenge.</div>
+      <div style="font-size:.68rem;color:var(--muted);font-weight:950;letter-spacing:.12em;text-transform:uppercase;margin-top:.65rem">Guide progress only · does not affect security confidence</div>
       <div class="step-mini" id="stepDots"><span class="step-dot active">1</span><span class="step-dot">2</span><span class="step-dot">3</span><span class="step-dot">4</span><span class="step-dot">5</span><span class="step-dot">6</span><span class="step-dot">7</span><span class="step-dot">8</span><span class="step-dot">9</span><span class="step-dot">10</span></div>
       <label>AI prompt</label>
       <textarea id="aiPrompt" readonly placeholder="Start memory challenge..."></textarea>
@@ -139,7 +140,7 @@
       </div>
       <div class="score">
         <div class="meter"><span id="trustMeter"></span></div>
-        <div class="muted">Trust score: <strong id="trustScoreText">0</strong> / 100 · Required: 70</div>
+        <div class="muted">Security confidence: <strong id="trustScoreText">0</strong> / 100 · Required: 70</div>
       </div>
     </div>
     <div class="panel" id="observerPanel">
@@ -337,9 +338,17 @@ async function authKey(type){
   if(ok){
     if(type==='user')memoryPassed=false;
     setSession(type,true);
-    addTrust(type==='owner'?55:45,`${type} key proof passed`);
+
+    if(type==='owner'){
+      setTrust(Math.max(trust,55),'owner key proof passed');
+    } else {
+      // User key proves identity, but must NOT complete the trident alone.
+      // Cap pre-memory trust below the cabinet threshold so memory remains mandatory.
+      setTrust(Math.min(Math.max(trust,65),65),'user key proof passed · memory proof pending');
+    }
+
     observe(`${type} cryptographic proof verified`,'OK');
-    if(type==='user')observe('User key accepted. Memory challenge still required.','LOCK');
+    if(type==='user')observe('User key accepted. Memory challenge still required before cabinet unlock.','LOCK');
     recordSuccess(`${type} key proof`)
   }
   else{setSession(type,false);addTrust(-25,`${type} key proof failed`);observe(`${type} key proof rejected`,'DENY');recordFailure(`${type} key proof failed`)}
@@ -413,7 +422,7 @@ function evalMemory(){
   if(!currentPrompt){observe('No active memory challenge','WARN');recordFailure('submitted without active challenge');return}
   const res=$('memoryResponse').value.trim();
   const score=similarity(res,currentPrompt.answer);
-  if(score>=.86){memoryPassed=true;addTrust(35,'memory phrase matched strongly');observe('Memory challenge passed. Trident context layer satisfied.','OK');recordSuccess('memory challenge')}
+  if(score>=.86){memoryPassed=true;setTrust(100,'memory phrase matched strongly · full trident satisfied');observe('Memory challenge passed. Trident context layer satisfied.','OK');recordSuccess('memory challenge')}
   else if(score>=.55){addTrust(12,'memory phrase partially matched');observe(`Memory challenge partial match (${Math.round(score*100)}%)`,'WARN')}
   else{addTrust(-30,'memory phrase mismatch');observe(`Memory challenge failed (${Math.round(score*100)}%)`,'DENY');recordFailure('memory phrase mismatch')}
   currentPrompt=null;
