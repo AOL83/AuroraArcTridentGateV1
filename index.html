@@ -127,7 +127,7 @@
         <button class="btn btn-red" id="lockAllBtn">Lock All</button>
       </div>
       <div id="uxHint" class="warn guide-hint" style="margin-top:.75rem">Next step: Start key challenge.</div>
-      <div class="step-mini" id="stepDots"><span class="step-dot active">1</span><span class="step-dot">2</span><span class="step-dot">3</span><span class="step-dot">4</span><span class="step-dot">5</span><span class="step-dot">6</span></div>
+      <div class="step-mini" id="stepDots"><span class="step-dot active">1</span><span class="step-dot">2</span><span class="step-dot">3</span><span class="step-dot">4</span><span class="step-dot">5</span><span class="step-dot">6</span><span class="step-dot">7</span><span class="step-dot">8</span><span class="step-dot">9</span><span class="step-dot">10</span></div>
       <label>AI prompt</label>
       <textarea id="aiPrompt" readonly placeholder="Start memory challenge..."></textarea>
       <label>Your response</label>
@@ -207,6 +207,7 @@ const $=id=>document.getElementById(id);
 let currentPrompt=null;
 let trust=0;
 let memoryPassed=false;
+let userKeyRegistered=false;
 let recognizer=null;
 let listening=false;
 let failedAttempts=0;
@@ -365,6 +366,7 @@ async function askMemory(){
   lastPromptText=currentPrompt.prompt;
   $('aiPrompt').value=currentPrompt.prompt;
   $('memoryResponse').value='';
+  updateUXHints();
   observe(`AI issued ${currentPrompt.type} challenge`,'AI');
 }
 function speakText(text){
@@ -418,7 +420,7 @@ function evalMemory(){
 }
 
 async function refreshMeta(){
-  const om=await dbGet(OWNER_META);const um=await dbGet(USER_META);
+  const om=await dbGet(OWNER_META);const um=await dbGet(USER_META);userKeyRegistered=!!um;
   $('ownerCardTitle').textContent=om?om.label:'NO OWNER';
   $('ownerCardId').textContent=om?'Created: '+new Date(om.createdAt).toLocaleString():'Create root key first';
   $('ownerFp').textContent=om?'Fingerprint: '+om.fingerprint:'Fingerprint: —';
@@ -429,6 +431,7 @@ async function refreshMeta(){
   if(!um)observe('No user cabinet registered yet.','INFO');
   const note=await dbGet(NOTE);$('storedNote').textContent=note||'No note saved yet.';
   if($('arcCompleteBanner'))$('arcCompleteBanner').classList.toggle('hidden',!note);
+  updateUXHints();
 }
 function updateAccess(){
   const ownerOpen=hasSession('owner')&&trust>=55;
@@ -453,7 +456,8 @@ function updateUXHints(){
   const hasOwnerKey=($('ownerFp')?.textContent||'').includes('-');
   const ownerSession=hasSession('owner');
   const userSession=hasSession('user');
-  const userTarget=role==='user';
+  const note=($('storedNote')?.textContent||'').trim();
+  const response=($('memoryResponse')?.value||'').trim();
   let hint='';
   let activePanel='loginPanel';
   let targetId='startLoginBtn';
@@ -461,34 +465,37 @@ function updateUXHints(){
   let step=1;
 
   if(!hasOwnerKey){
-    hint='Step 1: Create the Owner Key. This births the root authority.';
+    hint='Step 1: Begin Setup → Create Owner Key.';
     activePanel='ownerPanel'; targetId='createOwnerBtn'; navTarget='beginSetupBtn'; step=1;
   } else if(!ownerSession){
-    hint='Step 2: Authenticate Owner. The owner wakes the root shell before managing the egg.';
+    hint='Step 2: Authenticate Owner to wake the root shell.';
     activePanel='ownerPanel'; targetId='authOwnerBtn'; navTarget='beginSetupBtn'; step=2;
-  } else if(userTarget && !userSession){
-    hint='Step 3: Select User Cabinet, then press Start Key Challenge.';
-    activePanel='loginPanel'; targetId='startLoginBtn'; navTarget='openGateBtn'; step=3;
-  } else if(userTarget && userSession && !memoryPassed){
-    hint='Step 4: User key accepted. Memory challenge required before cabinet opens.';
-    activePanel='loginPanel'; targetId='askMemoryBtn'; navTarget='openGateBtn'; step=4;
-  } else if(userTarget && userSession && memoryPassed && trust<70){
-    hint='Memory passed, but trust is below threshold. Complete another challenge.';
-    activePanel='loginPanel'; targetId='askMemoryBtn'; navTarget='openGateBtn'; step=4;
-  } else if(userTarget && userSession && memoryPassed && trust>=70){
-    const note=($('storedNote')?.textContent||'').trim();
-    if(!note || note==='No note saved yet.'){
-      hint='Step 5: Access granted. Move to View Inside, write a cabinet note, then Save Note.';
-      activePanel='userCabinet'; targetId='cabinetNote'; navTarget='viewInsideBtn'; step=5;
-    }else{
-      hint='Step 6: Arc active. Cabinet initialized successfully.';
-      activePanel='userCabinet'; targetId='saveNoteBtn'; navTarget='viewInsideBtn'; step=6;
-    }
-  } else if(role==='owner' && ownerSession && trust>=55){
-    hint='Owner Core is open. Switch role to User Cabinet when you want the filing cabinet.';
-    activePanel='ownerCore'; targetId='loginRole'; navTarget='viewInsideBtn'; step=5;
+  } else if(!userKeyRegistered){
+    hint='Step 3: Create User Cabinet. This creates the user key and starter memory prompts.';
+    activePanel='userSetupPanel'; targetId='createUserBtn'; navTarget='beginSetupBtn'; step=3;
+  } else if(role!=='user'){
+    hint='Step 4: Select User Cabinet in the role menu.';
+    activePanel='loginPanel'; targetId='loginRole'; navTarget='openGateBtn'; step=4;
+  } else if(!userSession){
+    hint='Step 5: Start User Key Challenge.';
+    activePanel='loginPanel'; targetId='startLoginBtn'; navTarget='openGateBtn'; step=5;
+  } else if(userSession && !memoryPassed && !currentPrompt){
+    hint='Step 6: Ask Memory Challenge.';
+    activePanel='loginPanel'; targetId='askMemoryBtn'; navTarget='openGateBtn'; step=6;
+  } else if(userSession && !memoryPassed && currentPrompt && !response){
+    hint='Step 7: Answer the active AI prompt by typing or voice.';
+    activePanel='loginPanel'; targetId='memoryResponse'; navTarget='openGateBtn'; step=7;
+  } else if(userSession && !memoryPassed && currentPrompt && response){
+    hint='Step 8: Submit Response to satisfy the memory layer.';
+    activePanel='loginPanel'; targetId='submitMemoryBtn'; navTarget='openGateBtn'; step=8;
+  } else if(userSession && memoryPassed && trust>=70 && (!note || note==='No note saved yet.')){
+    hint='Step 9: View Inside → write your first cabinet note.';
+    activePanel='userCabinet'; targetId='cabinetNote'; navTarget='viewInsideBtn'; step=9;
+  } else if(userSession && memoryPassed && trust>=70){
+    hint='Step 10: Arc active. Cabinet initialized successfully.';
+    activePanel='userCabinet'; targetId='saveNoteBtn'; navTarget='viewInsideBtn'; step=10;
   } else {
-    hint='Select a role, then follow the highlighted step.';
+    hint='Follow the highlighted action. The egg is being fussy, naturally.';
     activePanel='loginPanel'; targetId='loginRole'; navTarget='openGateBtn'; step=1;
   }
 
@@ -559,6 +566,8 @@ $('wipeOwnerBtn').onclick=async()=>{await dbDel(OWNER_PRIV);await dbDel(OWNER_PU
 $('createUserBtn').onclick=async()=>{const ok=hasSession('owner');if(!ok){observe('Owner session required before creating user cabinet','DENY');return}await createKeyPair($('userLabel').value.trim()||'Primary User','user');await addPhrasePair()};
 $('addPhraseBtn').onclick=()=>addPhrasePair();
 $('wipeUserBtn').onclick=async()=>{await dbDel(USER_PRIV);await dbDel(USER_PUB);await dbDel(USER_META);await dbDel(PHRASES);await dbDel(NOTE);setSession('user',false);observe('User cabinet wiped','LOCK');refreshMeta()};
+$('loginRole').onchange=()=>updateUXHints();
+$('memoryResponse').oninput=()=>updateUXHints();
 $('startLoginBtn').onclick=()=>authKey($('loginRole').value);
 $('askMemoryBtn').onclick=()=>askMemory();
 $('speakPromptBtn').onclick=()=>{const text=$('aiPrompt').value.trim();if(!text){observe('No prompt to speak yet','WARN');return}speakText(text)};
